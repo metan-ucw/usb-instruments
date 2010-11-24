@@ -6,6 +6,7 @@ OBJECTS=$(PROGRAMS:=.o)
 
 all: $(PROGRAMS) vameter_gtk
 
+$(PROGRAMS): ../lib/*.a
 $(PROGRAMS): $(OBJECTS)
 	@echo "LD   $@"
 	@$(CC) $(LDFLAGS) $@.o ../lib/*.a -o $@
