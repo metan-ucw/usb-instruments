@@ -22,7 +22,15 @@
 #ifndef __LIBCOUNTER_H__
 #define __LIBCOUNTER_H__
 
+#include <stdint.h>
+
 #include "libserial.h"
+
+enum counter_mode {
+	COUNTER_05SEC_PERIOD, /* 0.5 sec period on  */
+	COUNTER_05SEC,        /* 0.5 sec period off */
+	COUNTER_5SEC,         /* 5 sec period off */
+};
 
 struct counter {
 	struct libserial_port *port;
@@ -35,13 +43,32 @@ struct counter {
 	void (*range_ev)(unsigned char range);
 };
 
+/*
+ * Lock serial port. initalize counter.
+ */
 struct counter *counter_create(const char *port, void (*measure)(unsigned int),
                                void (*range)(unsigned char));
 
+/*
+ * Unlock serial port, free memory.
+ */
 void            counter_destroy(struct counter *counter);
 
+/*
+ * Read and parse data.
+ */
 void            counter_read(struct counter *counter);
 
-void            counter_cmd(struct counter *counter, int cmd);
+/*
+ * Set measurment mode
+ */
+void            counter_mode(struct counter *counter, enum counter_mode mode);
+
+/*
+ * Set trigger level.
+ *
+ * The value is six bits with zero, so values > +31 or < -31 are rounded.
+ */
+void            counter_trigger(struct counter *counter, int8_t trig);
 
 #endif /* __LIBCOUNTER_H__ */

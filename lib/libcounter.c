@@ -22,6 +22,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <string.h>
+#include <errno.h>
+#include <stdio.h>
+
 #include "libcounter.h"
 
 #define PACKET_START 0xC9
@@ -131,4 +135,45 @@ void counter_read(struct counter *counter)
 
 	for (i = 0; i < len; i++)
 		counter_parse(counter, buf[i]);
+}
+
+static const char modes[] = {
+	0x30, /* 0.5 sec period on  */
+	0x31, /* 0.5 sec period off */
+	0x32  /* 5 sec period off   */
+};
+
+void counter_mode(struct counter *counter, enum counter_mode mode)
+{
+	if (mode > COUNTER_5SEC) {
+		printf("Invalid mode\n");
+		return;
+	}
+
+	if (write(counter->port->fd, &modes[mode], 1) != 1)
+		printf("Error setting mode %s\n.", strerror(errno));
+}
+
+/*
+ * 0x81 - 0xbf
+ *
+ * 0x10 trigger_level
+ */
+void counter_trigger(struct counter *counter, int8_t trig)
+{
+	/* round up trigger value */
+	if (trig > 31)
+		trig = 31;
+
+	if (trig < -31)
+		trig = -31;
+	
+	/* move the trigger value to 1 - 63 range (six bits) */
+	trig += 32;
+
+	/* set trigger command bit */
+	trig |= 0x80;
+
+	if (write(counter->port->fd, &trig, 1) != 1)
+		printf("Error setting trigger %s\n.", strerror(errno));
 }
