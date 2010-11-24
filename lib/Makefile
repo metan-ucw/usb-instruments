@@ -12,6 +12,7 @@ clean:
 	@rm -rf $(OBJECTS) $(DEPS) $(LIBNAME).so $(LIBNAME).a
 
 $(LIBNAME).so: $(OBJECTS)
+$(LIBNAME).a: $(OBJECTS)
 
 -include $(DEPS)
 
