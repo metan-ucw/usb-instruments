@@ -19,56 +19,15 @@
  *                                                                            *
  ******************************************************************************/
 
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <signal.h>
-#include "libcounter.h"
 
-static int ready = 1;
+#ifndef __GTK_COMMON_H__
+#define __GTK_COMMON_H__
 
-static void measure(float val)
-{
-	printf("%.3f\n", val);
-}
+#include <gtk/gtk.h>
 
-static void range(unsigned char range)
-{
-	printf("range %c\n", range);
-}
+/*
+ * Run serial port configuration dialog.
+ */
+int gtk_run_serial_cfg(GtkWindow *parent, const char *old_dev, char *dev, size_t size);
 
-static void sighandler(int signum)
-{
-	(void) signum;
-	ready = 0;
-}
-
-int main(int argc, char *argv[])
-{
-	struct counter *counter;
-	
-	if (argc != 2) {
-		printf("usage: ./counter /dev/serial\n");
-		return 1;
-	}
-
-	counter = counter_create(argv[1], measure, range);
-
-	if (counter == NULL) {
-		printf("failed to initalize counter: %s\n", strerror(errno));
-		return 1;
-	}
-
-	signal(SIGINT, sighandler);
-
-	counter_trigger(counter, 10);
-
-	while (ready)
-		counter_read(counter);
-
-	counter_destroy(counter);
-
-	return 0;
-}
+#endif /* __GTK_COMMON_H__ */

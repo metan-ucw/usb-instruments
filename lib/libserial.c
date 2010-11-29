@@ -169,6 +169,9 @@ err:
 
 void libserial_close(struct libserial_port *port)
 {
+	if (port == NULL)
+		return;
+	
 	close(port->fd);
 	
 	if (S_ISCHR(port->st.st_mode))

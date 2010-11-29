@@ -30,7 +30,7 @@
 
 #define PACKET_START 0xC9
 
-struct counter *counter_create(const char *dev, void (*measure)(unsigned int),
+struct counter *counter_create(const char *dev, void (*measure)(float),
                                void (*range)(unsigned char))
 {
 	struct counter *counter = malloc(sizeof (struct counter));
@@ -59,13 +59,11 @@ struct counter *counter_create(const char *dev, void (*measure)(unsigned int),
 
 void counter_destroy(struct counter *counter)
 {
+	if (counter == NULL)
+		return;
+
 	libserial_close(counter->port);
 	free(counter);
-}
-
-void counter_cmd(struct counter *counter, int cmd)
-{
-
 }
 
 static void counter_parse(struct counter *counter, unsigned char byte)
@@ -96,19 +94,19 @@ static void counter_parse(struct counter *counter, unsigned char byte)
 				
 				switch (counter->range) {
 					case 'A':
-						counter->measure_ev(2 * 128 * counter->val);
+						counter->measure_ev(2.00 * 128 * counter->val);
 					break;
 					case 'B':
-						counter->measure_ev(2 * counter->val);
+						counter->measure_ev(2.00 * counter->val);
 					break;
 					case 'C':
 						counter->measure_ev(2000000.00 / counter->val);
 					break;
 					case 'a':
-						counter->measure_ev(128 * counter->val / 5);
+						counter->measure_ev(128.00 * counter->val / 5);
 					break;
 					case 'b':
-						counter->measure_ev(counter->val / 5);
+						counter->measure_ev(1.00 * counter->val / 5);
 					break;
 				}
 					
@@ -123,7 +121,7 @@ static void counter_parse(struct counter *counter, unsigned char byte)
 
 void counter_read(struct counter *counter)
 {
-	char buf[8];
+	char buf[64];
 	int len;
 	int i;
 

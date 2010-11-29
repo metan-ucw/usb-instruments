@@ -39,14 +39,14 @@ struct counter {
 	unsigned char range;
 	unsigned int val;
 
-	void (*measure_ev)(unsigned int val);
+	void (*measure_ev)(float val);
 	void (*range_ev)(unsigned char range);
 };
 
 /*
  * Lock serial port. initalize counter.
  */
-struct counter *counter_create(const char *port, void (*measure)(unsigned int),
+struct counter *counter_create(const char *port, void (*measure)(float),
                                void (*range)(unsigned char));
 
 /*

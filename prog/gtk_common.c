@@ -19,56 +19,48 @@
  *                                                                            *
  ******************************************************************************/
 
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdio.h>
 #include <string.h>
-#include <errno.h>
-#include <signal.h>
-#include "libcounter.h"
+#include <gtk/gtk.h>
 
-static int ready = 1;
+#define DEF_DEV "/dev/ttyUSB0"
 
-static void measure(float val)
+int gtk_run_serial_cfg(GtkWindow *parent, const char *old_dev, char *dev, size_t size)
 {
-	printf("%.3f\n", val);
-}
 
-static void range(unsigned char range)
-{
-	printf("range %c\n", range);
-}
+	GtkWidget *dialog, *label, *entry, *table;
+	gint response;
 
-static void sighandler(int signum)
-{
-	(void) signum;
-	ready = 0;
-}
-
-int main(int argc, char *argv[])
-{
-	struct counter *counter;
+	if (old_dev == NULL)
+		old_dev = DEF_DEV;
 	
-	if (argc != 2) {
-		printf("usage: ./counter /dev/serial\n");
+	dialog = gtk_dialog_new_with_buttons("Serial port settings", parent,
+					     GTK_DIALOG_MODAL,
+					     GTK_STOCK_OK, GTK_RESPONSE_OK,
+					     GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+					     NULL);
+
+	gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
+	label = gtk_label_new("Serial port device:");
+	entry = gtk_entry_new();
+	gtk_entry_set_text(GTK_ENTRY(entry), old_dev);
+	table = gtk_table_new(1, 2, FALSE);
+	gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 0, 1);
+	gtk_table_attach_defaults(GTK_TABLE(table), entry, 1, 2, 0, 1);
+	gtk_box_pack_start_defaults(GTK_BOX(GTK_DIALOG (dialog)->vbox), table);
+
+	gtk_widget_show_all(dialog);
+	
+	response = gtk_dialog_run(GTK_DIALOG (dialog));
+	
+	gtk_widget_hide_all(dialog);
+
+	if (response == GTK_RESPONSE_OK) {
+		strncpy(dev, gtk_entry_get_text (GTK_ENTRY (entry)), size);
+		dev[size - 1] = '\0';
 		return 1;
 	}
 
-	counter = counter_create(argv[1], measure, range);
-
-	if (counter == NULL) {
-		printf("failed to initalize counter: %s\n", strerror(errno));
-		return 1;
-	}
-
-	signal(SIGINT, sighandler);
-
-	counter_trigger(counter, 10);
-
-	while (ready)
-		counter_read(counter);
-
-	counter_destroy(counter);
+	gtk_widget_destroy(dialog);
 
 	return 0;
 }
