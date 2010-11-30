@@ -31,6 +31,7 @@ static struct counter *counter = NULL;
 static int fd_tag;
 static char dev[128] = "/dev/ttyUSB0";
 static GtkWidget *freq_label;
+static GtkWidget *range_label;
 
 static void destroy(GtkWidget *widget, gpointer data)
 {
@@ -64,7 +65,16 @@ static void measure(float freq)
 
 static void range(unsigned char range)
 {
-	printf("range %c\n", range);
+	char buf[2];
+
+	/* 'E' == no input */
+	if (range == 'E')
+		gtk_label_set_text(GTK_LABEL(freq_label), "--- Mhz");
+
+	buf[0] = range;
+	buf[1] = '\0';
+
+	gtk_label_set_text(GTK_LABEL(range_label), buf);
 }
 
 /*
@@ -124,20 +134,109 @@ static GtkWidget *create_menubar(GtkWidget *window)
 	return gtk_item_factory_get_widget(item_factory, "<main>");
 }
 
+static void radio_button_callback_1(GtkWidget *widget,
+                                    gpointer data __attribute__((unused)))
+{
+	if (!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
+		return;
+
+	if (counter == NULL)
+		return;
+
+	counter_mode(counter, COUNTER_05SEC_PERIOD);
+}
+
+static void radio_button_callback_2(GtkWidget *widget,
+                                    gpointer data __attribute__((unused)))
+{
+	if (!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
+		return;
+	
+	if (counter == NULL)
+		return;
+
+	counter_mode(counter, COUNTER_05SEC);
+}
+
+static void radio_button_callback_3(GtkWidget *widget,
+                                    gpointer data __attribute__((unused)))
+{
+	if (!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
+		return;
+	
+	if (counter == NULL)
+		return;
+
+	counter_mode(counter, COUNTER_5SEC);
+}
+
+static void slider_callback(GtkRange *range, gpointer *priv)
+{
+	int val = gtk_range_get_value(range);
+	
+	if (counter != NULL)
+		counter_trigger(counter, val);
+}
+
 static GtkWidget *create_counter(void)
 {
-	GtkWidget *table = gtk_table_new(2, 1, TRUE);
+	GtkWidget *table = gtk_table_new(2, 2, TRUE);
 	GtkWidget *freq_frame = gtk_frame_new("Frequency");
+	GtkWidget *range_frame = gtk_frame_new("Range");
+	GtkWidget *gate_frame = gtk_frame_new("Gate");
+	GtkWidget *trigger_frame = gtk_frame_new("Trigger");
+	GtkWidget *box, *button, *slider;
+	GSList *group;
 	PangoFontDescription *font;
 	
+	gtk_container_set_border_width(GTK_CONTAINER(table), 5);
+	
 	freq_label = gtk_label_new("--- Mhz");
+	range_label = gtk_label_new("-");
 
-	font = pango_font_description_from_string("Sans 16");
+	font = pango_font_description_from_string("Monospace 16");
         gtk_widget_modify_font(freq_label, font);
+	gtk_widget_modify_font(range_label, font);
 
 	gtk_container_add(GTK_CONTAINER(freq_frame), freq_label);
+	gtk_container_add(GTK_CONTAINER(range_frame), range_label);
+
+	/* radio buttons */
+	box = gtk_vbox_new(FALSE, 5);
+	
+	button = gtk_radio_button_new_with_label(NULL, "0.5 sec Gate (Period ON)");
+	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(button));
+	gtk_box_pack_start(GTK_BOX(box), button, FALSE, TRUE, 0);
+
+	g_signal_connect(G_OBJECT(button), "toggled",
+	                 G_CALLBACK(radio_button_callback_1), NULL);
+
+	button = gtk_radio_button_new_with_label(group, "0.5 sec Gate (Period OFF)");
+	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(button));
+	gtk_box_pack_start(GTK_BOX(box), button, FALSE, TRUE, 0);
+	
+	g_signal_connect(G_OBJECT(button), "toggled",
+	                 G_CALLBACK(radio_button_callback_2), NULL);
+	
+	button = gtk_radio_button_new_with_label(group, "5 sec Gate (Period OFF)");
+	gtk_box_pack_start(GTK_BOX(box), button, FALSE, TRUE, 0);
+	
+	g_signal_connect(G_OBJECT(button), "toggled",
+	                 G_CALLBACK(radio_button_callback_3), NULL);
+	
+	gtk_container_add(GTK_CONTAINER(gate_frame), box);
+
+	/* trigger slider */
+	slider = gtk_vscale_new_with_range(-31, 31, 1);
+	gtk_range_set_value(GTK_RANGE(slider), 0);
+	g_signal_connect(slider, "value_changed",
+	                 G_CALLBACK(slider_callback), NULL);
+	gtk_container_add(GTK_CONTAINER(trigger_frame), slider);
 
 	gtk_table_attach_defaults(GTK_TABLE(table), freq_frame, 0, 1, 0, 1);
+	gtk_table_attach_defaults(GTK_TABLE(table), range_frame, 1, 2, 0, 1);
+	gtk_table_attach_defaults(GTK_TABLE(table), gate_frame, 0, 2, 1, 2);
+	gtk_table_attach_defaults(GTK_TABLE(table), trigger_frame, 2, 3, 0, 2);
 
 	gtk_table_set_row_spacings(GTK_TABLE(table), 5);
 	gtk_table_set_col_spacings(GTK_TABLE(table), 5);
@@ -159,7 +258,6 @@ int main(int argc, char *argv[])
 
 	gtk_box_pack_start(GTK_BOX(vbox), create_menubar(window), FALSE, TRUE, 0);
 	gtk_box_pack_end(GTK_BOX(vbox), create_counter(), TRUE, TRUE, 0);
-
 
 	gtk_container_add(GTK_CONTAINER(window), vbox);
 

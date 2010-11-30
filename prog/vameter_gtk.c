@@ -225,8 +225,8 @@ static GtkWidget *CreateVAmeter(void)
 	gtk_widget_modify_font(voltage_label, initial_font);
 	gtk_widget_modify_font(current_label, initial_font);
 
-	gtk_container_add (GTK_CONTAINER (voltage_frame), voltage_label);
-	gtk_container_add (GTK_CONTAINER (current_frame), current_label);
+	gtk_container_add(GTK_CONTAINER (voltage_frame), voltage_label);
+	gtk_container_add(GTK_CONTAINER (current_frame), current_label);
 	
 	voltage_range_frame = gtk_frame_new ("Voltage range");
 	current_range_frame = gtk_frame_new ("Current range");
@@ -234,17 +234,17 @@ static GtkWidget *CreateVAmeter(void)
 	voltage_range_label = gtk_label_new ("---");
 	current_range_label = gtk_label_new ("---");
 
-	gtk_container_add (GTK_CONTAINER (voltage_range_frame), voltage_range_label);
-	gtk_container_add (GTK_CONTAINER (current_range_frame), current_range_label);
+	gtk_container_add(GTK_CONTAINER (voltage_range_frame), voltage_range_label);
+	gtk_container_add(GTK_CONTAINER (current_range_frame), current_range_label);
 	
-	gtk_table_attach_defaults (GTK_TABLE (table), voltage_frame, 0, 1, 0, 1);
-	gtk_table_attach_defaults (GTK_TABLE (table), current_frame, 1, 2, 0, 1);
+	gtk_table_attach_defaults(GTK_TABLE (table), voltage_frame, 0, 1, 0, 1);
+	gtk_table_attach_defaults(GTK_TABLE (table), current_frame, 1, 2, 0, 1);
 	
-	gtk_table_attach_defaults (GTK_TABLE (table), voltage_range_frame, 0, 1, 1, 2);
-	gtk_table_attach_defaults (GTK_TABLE (table), current_range_frame, 1, 2, 1, 2);
+	gtk_table_attach_defaults(GTK_TABLE (table), voltage_range_frame, 0, 1, 1, 2);
+	gtk_table_attach_defaults(GTK_TABLE (table), current_range_frame, 1, 2, 1, 2);
 
-	gtk_table_set_row_spacings (GTK_TABLE (table), 5);
-	gtk_table_set_col_spacings (GTK_TABLE (table), 5);
+	gtk_table_set_row_spacings(GTK_TABLE (table), 5);
+	gtk_table_set_col_spacings(GTK_TABLE (table), 5);
 
 	return table;
 }
