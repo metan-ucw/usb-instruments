@@ -110,7 +110,8 @@ static void ShowAboutDialog(GtkWindow *parent)
 	gtk_about_dialog_set_name(GTK_ABOUT_DIALOG (dialog), "vameter_gtk");
 	gtk_about_dialog_set_version(GTK_ABOUT_DIALOG (dialog), "first alpha");
 	gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG (dialog), "(C) 2009 Cyril Hrubis");
-	gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG (dialog), "This is graphical frontend to vameter library for usb voltmeter/ampermeter.");
+	gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG (dialog),
+		"This is graphical frontend to vameter library for usb voltmeter/ampermeter.");
 	gtk_about_dialog_set_license(GTK_ABOUT_DIALOG (dialog), "GPLv2 or any later");
 	gtk_about_dialog_set_website(GTK_ABOUT_DIALOG (dialog), "http://todo");
 	gtk_about_dialog_set_authors(GTK_ABOUT_DIALOG (dialog), authors);

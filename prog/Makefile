@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-W -Wall -g -ggdb -I../include/
 LDFLAGS=-lm
-PROGRAMS=serial-test counter vameter
+PROGRAMS=serial-test counter vameter generator
 OBJECTS=$(PROGRAMS:=.o)
 GTK_PROGRAMS=vameter_gtk counter_gtk
 GTK_OBJECTS=$(GTK_PROGRAMS:=.o)
