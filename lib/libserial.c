@@ -45,10 +45,11 @@ static int ser_init(int fd, tcflag_t baudrate)
 	
 	tcgetattr(fd, &t);
 
-	t.c_cflag = baudrate | CREAD | HUPCL | CLOCAL | CS8;
-	t.c_iflag = baudrate | IGNBRK | IGNPAR;
-	t.c_oflag = 0;
-	t.c_lflag = 0;
+	t.c_cflag = baudrate;
+	t.c_iflag = baudrate;
+	
+	cfmakeraw(&t);
+	
 	t.c_cc[VMIN]  = 1;
 	t.c_cc[VTIME] = 0;
 
