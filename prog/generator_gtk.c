@@ -35,6 +35,7 @@ static char dev[128] = "/dev/ttyUSB0";
 static GtkWidget *freq_entry;
 static GtkWidget *filters[4];
 static GtkWidget *waves[8];
+static GtkWidget *memory[8];
 
 static void destroy(GtkWidget *widget, gpointer data)
 {
@@ -94,6 +95,12 @@ static void generator_update(struct generator *self)
 	default:
 	break;
 	}
+
+	/* set memory */
+	if (self->mem < 8)
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(memory[self->mem]), TRUE);
+	else
+		printf("Invalid memory %u\n", self->mem);
 }
 
 /*
@@ -214,8 +221,6 @@ static void wave_radio_button_callback(GtkWidget *widget,
 static void filter_radio_button_callback(GtkWidget *widget,
                                          gpointer data)
 {
-	printf("filter callback\n");
-
 	if (!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
 		return;
 
@@ -226,6 +231,23 @@ static void filter_radio_button_callback(GtkWidget *widget,
 
 	printf("Setting filter\n");
 	generator_set_filter(generator, filter);
+	generator_load_state(generator);
+}
+
+static void memory_radio_button_callback(GtkWidget *widget,
+                                       gpointer data)
+{
+	if (!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
+		return;
+
+	if (generator == NULL)
+		return;
+
+	uint8_t mem = (int)data;
+
+	printf("Loading memory %u\n", mem);
+
+	generator_load(generator, mem);
 	generator_load_state(generator);
 }
 
@@ -258,12 +280,13 @@ static void freq_entry_callback(GtkWidget *widget, GtkEntry *entry)
 
 static GtkWidget *create_generator(void)
 {
-	GtkWidget *table = gtk_table_new(2, 4, TRUE), *ftable;
+	GtkWidget *table = gtk_table_new(3, 4, FALSE), *ftable;
 	GtkWidget *freq_frame = gtk_frame_new("Freq Hz/Baud");
 	GtkWidget *filter_frame = gtk_frame_new("Filter");
 	GtkWidget *wave_frame = gtk_frame_new("Output wave");
 	GtkWidget *amplitude_frame = gtk_frame_new("Amplitude");
 	GtkWidget *offset_frame = gtk_frame_new("Offset");
+	GtkWidget *memory_frame = gtk_frame_new("Memory");
 	GtkWidget *box, *button, *slider;
 	GSList *group;
 
@@ -329,16 +352,32 @@ static GtkWidget *create_generator(void)
 
 	for (i = 0; i < 8; i++) {
 		waves[i] = gtk_radio_button_new_with_label(group, wave_names[i]);
-
 		group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(waves[i]));
-
 		gtk_box_pack_start(GTK_BOX(box), waves[i], FALSE, TRUE, 0);
-
 		g_signal_connect(G_OBJECT(waves[i]), "toggled",
 		                 G_CALLBACK(wave_radio_button_callback), (void*)i);
 	}
 
 	gtk_container_add(GTK_CONTAINER(wave_frame), box);
+
+	/* memory radio buttons */
+	box = gtk_hbox_new(FALSE, 5);
+
+	group = NULL;
+
+	for (i = 0; i < 8; i++) {
+		char buf[2] = {0, 0};
+
+		buf[0] = i + '1';
+
+		memory[i] = gtk_radio_button_new_with_label(group, buf);
+		group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(memory[i]));
+		gtk_box_pack_start(GTK_BOX(box), memory[i], FALSE, TRUE, 0);
+		g_signal_connect(G_OBJECT(memory[i]), "toggled",
+		                 G_CALLBACK(memory_radio_button_callback), (void*)i);
+	}
+	
+	gtk_container_add(GTK_CONTAINER(memory_frame), box);
 
 	/* amplitude slider */
 	slider = gtk_vscale_new_with_range(0, 4.81, 0.01);
@@ -360,6 +399,7 @@ static GtkWidget *create_generator(void)
 	gtk_table_attach_defaults(GTK_TABLE(table), filter_frame, 1, 2, 1, 2);
 	gtk_table_attach_defaults(GTK_TABLE(table), amplitude_frame, 2, 3, 0, 2);
 	gtk_table_attach_defaults(GTK_TABLE(table), offset_frame, 3, 4, 0, 2);
+	gtk_table_attach_defaults(GTK_TABLE(table), memory_frame, 1, 4, 2, 3);
 
 	gtk_table_set_row_spacings(GTK_TABLE(table), 5);
 	gtk_table_set_col_spacings(GTK_TABLE(table), 5);
