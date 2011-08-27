@@ -149,7 +149,7 @@ void generator_read(struct generator *self)
 	if ((len = read(self->port->fd, self->data + self->data_pos,
 	    sizeof(self->data) - self->data_pos)) > 0) {
 		
-//		dump(self->data + self->data_pos, len);
+	//	dump(self->data + self->data_pos, len);
 		
 		self->data_pos += len;
 
@@ -179,6 +179,7 @@ void generator_read(struct generator *self)
 			printf("Start of state packet\n");
 			self->data_flag = 1;
 			memmove(self->data, self->data+i, self->data_pos - i);
+			self->data_pos -= i;
 			return;
 		break;
 		default:
