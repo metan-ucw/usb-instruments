@@ -191,8 +191,8 @@ void generator_read(struct generator *self)
 	self->data_pos = 0;
 }
 
-#define SAVE(x) (0x60 | (0x03 & (x)))
-#define LOAD(x) (0x70 | (0x03 & (x)))
+#define SAVE(x) (0x60 | (0x07 & (x)))
+#define LOAD(x) (0x70 | (0x07 & (x)))
 
 void generator_save(struct generator *self, uint8_t pos)
 {
