@@ -210,7 +210,7 @@ void generator_load(struct generator *self, uint8_t pos)
 		printf("Error loading state: %s\n.", strerror(errno));
 }
 
-#define WAVE(x) (0x30 | (0x03 & (x)))
+#define WAVE(x) (0x30 | (0x07 & (x)))
 
 void generator_set_wave(struct generator *self, enum generator_wave wave)
 {
