@@ -205,12 +205,14 @@ static void wave_radio_button_callback(GtkWidget *widget,
 		return;
 	}
 
+	printf("Setting wave\n");
+
 	generator_set_wave(generator, wave);
 	generator_load_state(generator);
 }
 
 static void filter_radio_button_callback(GtkWidget *widget,
-                                         gpointer data __attribute__((unused)))
+                                         gpointer data)
 {
 	printf("filter callback\n");
 
@@ -220,7 +222,11 @@ static void filter_radio_button_callback(GtkWidget *widget,
 	if (generator == NULL)
 		return;
 
-//	counter_mode(counter, COUNTER_05SEC_PERIOD);
+	enum generator_filter filter = (enum generator_filter) data;
+
+	printf("Setting filter\n");
+	generator_set_filter(generator, filter);
+	generator_load_state(generator);
 }
 
 static void amplitude_slider_callback(GtkRange *range,
@@ -280,27 +286,31 @@ static GtkWidget *create_generator(void)
 	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(button));
 	gtk_table_attach_defaults(GTK_TABLE(ftable), button, 0, 1, 0, 1);
 	g_signal_connect(G_OBJECT(button), "toggled",
-	                 G_CALLBACK(filter_radio_button_callback), NULL);
+	                 G_CALLBACK(filter_radio_button_callback),
+			 (void*)GENERATOR_FILTER_NONE);
 	filters[0] = button;
 
 	button = gtk_radio_button_new_with_label(group, "600 Hz");
 	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(button));
 	gtk_table_attach_defaults(GTK_TABLE(ftable), button, 1, 2, 0, 1);
 	g_signal_connect(G_OBJECT(button), "toggled",
-	                 G_CALLBACK(filter_radio_button_callback), NULL);
+	                 G_CALLBACK(filter_radio_button_callback),
+			 (void*)GENERATOR_FILTER_600HZ);
 	filters[3] = button;
 	
 	button = gtk_radio_button_new_with_label(group, "8 kHz");
 	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(button));
 	gtk_table_attach_defaults(GTK_TABLE(ftable), button, 0, 1, 1, 2);
 	g_signal_connect(G_OBJECT(button), "toggled",
-	                 G_CALLBACK(filter_radio_button_callback), NULL);
+	                 G_CALLBACK(filter_radio_button_callback),
+			 (void*)GENERATOR_FILTER_8KHZ);
 	filters[2] = button;
 	
 	button = gtk_radio_button_new_with_label(group, "100 kHz");
 	gtk_table_attach_defaults(GTK_TABLE(ftable), button, 1, 2, 1, 2);
 	g_signal_connect(G_OBJECT(button), "toggled",
-	                 G_CALLBACK(filter_radio_button_callback), NULL);
+	                 G_CALLBACK(filter_radio_button_callback),
+			 (void*)GENERATOR_FILTER_100KHZ);
 
 	gtk_container_add(GTK_CONTAINER(filter_frame), ftable);
 	filters[1] = button;
