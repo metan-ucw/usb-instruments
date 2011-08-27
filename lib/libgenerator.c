@@ -68,12 +68,12 @@ struct generator *generator_create(const char *port,
 	generator->update = update;
 
 	/* state initalization */
-	generator->out_wave   = GENERATOR_WAVE_UNKNOWN;
-	generator->out_filter = GENERATOR_FILTER_UNKNOWN;
-	generator->amplitude  = 0;
-	generator->offset     = 0;
-	generator->freq       = 0;
-	generator->mem        = 0;
+	generator->wave      = GENERATOR_WAVE_UNKNOWN;
+	generator->filter    = GENERATOR_FILTER_UNKNOWN;
+	generator->amplitude = 0;
+	generator->offset    = 0;
+	generator->freq      = 0;
+	generator->mem       = 0;
 
 	/* serial data buffer */
 	generator->data_pos  = 0;
@@ -108,12 +108,12 @@ static void generator_parse_state(struct generator *self)
 
 	printf("\n");
 
-	self->out_wave   = self->data[1];
-	self->freq       = self->data[2]<<16 | self->data[3]<<8 | self->data[4];
-	self->offset     = self->data[5];
-	self->amplitude  = self->data[6];
-	self->out_filter = self->data[7];
-	self->mem        = self->data[8];
+	self->wave      = self->data[1];
+	self->freq      = self->data[2]<<16 | self->data[3]<<8 | self->data[4];
+	self->offset    = self->data[5];
+	self->amplitude = self->data[6];
+	self->filter    = self->data[7];
+	self->mem       = self->data[8];
 
 	/* 24 bit negative two's complement */
 	if (self->freq & 0x800000) {
@@ -270,7 +270,7 @@ void generator_load_state(struct generator *self)
 
 float generator_convert_freq(struct generator *self)
 {
-	switch (self->out_wave) {
+	switch (self->wave) {
 	case GENERATOR_WAVE_UNKNOWN:
 	case GENERATOR_WAVE_BW_VIDEO:
 		return 0;

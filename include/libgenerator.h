@@ -59,8 +59,8 @@ struct generator {
 	void (*update)(struct generator *self);
 
 	/* generator internal state */
-	enum generator_wave   out_wave;
-	enum generator_filter out_filter;
+	enum generator_wave   wave;
+	enum generator_filter filter;
 	uint8_t amplitude;
 	uint8_t offset;
 	int32_t freq;

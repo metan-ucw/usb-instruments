@@ -31,6 +31,11 @@ static struct generator *generator = NULL;
 static int fd_tag;
 static char dev[128] = "/dev/ttyUSB0";
 
+/* static global gtk widgets */
+static GtkWidget *freq_entry;
+static GtkWidget *filters[4];
+static GtkWidget *waves[8];
+
 static void destroy(GtkWidget *widget, gpointer data)
 {
 	generator_destroy(generator);
@@ -48,8 +53,47 @@ static void settings(GtkWidget *widget, gpointer data)
  */
 static void generator_update(struct generator *self)
 {
+	char buf[128];
+
 	printf("Generator update\n");
 
+	/* set frequency */
+	snprintf(buf, sizeof(buf), "%6.2f", fabs(generator_convert_freq(self)));
+	gtk_entry_set_text(GTK_ENTRY(freq_entry), buf);
+
+	/* set filter */
+	if (self->filter < 4)
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(filters[self->filter]), TRUE);
+
+	/* set wave */
+	switch (self->wave) {
+	case GENERATOR_WAVE_SINE:
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(waves[0]), TRUE);
+	break;
+	case GENERATOR_WAVE_TRIANGLE:
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(waves[1]), TRUE);
+	break;
+	case GENERATOR_WAVE_SAWTOOTH:
+		if (generator_convert_freq(self) > 0)
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(waves[2]), TRUE);
+		else
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(waves[3]), TRUE);
+	break;
+	case GENERATOR_WAVE_SQUARE:
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(waves[4]), TRUE);
+	break;
+	case GENERATOR_WAVE_BW_VIDEO:
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(waves[5]), TRUE);
+	break;
+	case GENERATOR_WAVE_SERIAL:
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(waves[6]), TRUE);
+	break;
+	case GENERATOR_WAVE_SERIAL_INV:
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(waves[7]), TRUE);
+	break;
+	default:
+	break;
+	}
 }
 
 /*
@@ -66,12 +110,22 @@ static void connect(GtkWidget *widget, gpointer data)
 {
 	generator = generator_create(dev, generator_update);
 
-	if (generator != NULL)
+	if (generator != NULL) {
 		fd_tag = gdk_input_add(generator->port->fd, GDK_INPUT_READ, generator_callback, NULL);
+		generator_load_state(generator);
+		return;
+	}
+
+	printf("Failed to connect\n");
 }
 
 static void disconnect(GtkWidget *widget, gpointer data)
 {
+	if (generator == NULL) {
+		printf("Nothing to disconnect\n");
+		return;
+	}
+
 	gdk_input_remove(fd_tag);
 	generator_destroy(generator);
 	generator = NULL;
@@ -108,10 +162,11 @@ static GtkWidget *create_menubar(GtkWidget *window)
 	return gtk_item_factory_get_widget(item_factory, "<main>");
 }
 
-static void radio_button_callback(GtkWidget *widget,
-                                  gpointer data __attribute__((unused)))
+static void wave_radio_button_callback(GtkWidget *widget,
+                                       gpointer data)
 {
-	printf("radio callback\n");
+	int idx = (int)data;
+	enum generator_wave wave = GENERATOR_WAVE_UNKNOWN;
 
 	if (!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
 		return;
@@ -119,7 +174,39 @@ static void radio_button_callback(GtkWidget *widget,
 	if (generator == NULL)
 		return;
 
-//	counter_mode(counter, COUNTER_05SEC_PERIOD);
+	/* set wave */
+	switch (idx) {
+	case 0:
+		wave = GENERATOR_WAVE_SINE;
+	break;
+	case 1:
+		wave = GENERATOR_WAVE_TRIANGLE;
+	break;
+	case 2:
+		wave = GENERATOR_WAVE_SAWTOOTH;
+	break;
+	case 3:
+		//TODO: negative freq
+		wave = GENERATOR_WAVE_SAWTOOTH;
+	break;
+	case 4:
+		wave = GENERATOR_WAVE_SQUARE;
+	break;
+	case 5:
+		wave = GENERATOR_WAVE_BW_VIDEO;
+	break;
+	case 6:
+		wave = GENERATOR_WAVE_SERIAL;
+	break;
+	case 7:
+		wave = GENERATOR_WAVE_SERIAL_INV;
+	break;
+	default:
+		return;
+	}
+
+	generator_set_wave(generator, wave);
+	generator_load_state(generator);
 }
 
 static void filter_radio_button_callback(GtkWidget *widget,
@@ -158,31 +245,33 @@ static void offset_slider_callback(GtkRange *range,
 //		counter_trigger(counter, val);
 }
 
+static void freq_entry_callback(GtkWidget *widget, GtkEntry *entry)
+{
+	printf("Entry %s\n", gtk_entry_get_text(GTK_ENTRY(entry)));
+}
+
 static GtkWidget *create_generator(void)
 {
 	GtkWidget *table = gtk_table_new(2, 4, TRUE), *ftable;
-	GtkWidget *freq_frame = gtk_frame_new("Frequency/Baud");
+	GtkWidget *freq_frame = gtk_frame_new("Freq Hz/Baud");
 	GtkWidget *filter_frame = gtk_frame_new("Filter");
 	GtkWidget *wave_frame = gtk_frame_new("Output wave");
 	GtkWidget *amplitude_frame = gtk_frame_new("Amplitude");
 	GtkWidget *offset_frame = gtk_frame_new("Offset");
 	GtkWidget *box, *button, *slider;
 	GSList *group;
-	PangoFontDescription *font;
-	
+
 	gtk_container_set_border_width(GTK_CONTAINER(table), 5);
-	
-	/*
-	freq_label = gtk_label_new("--- Mhz");
-	range_label = gtk_label_new("-");
 
-	font = pango_font_description_from_string("Monospace 16");
-        gtk_widget_modify_font(freq_label, font);
-	gtk_widget_modify_font(range_label, font);
+	/* frequency edit box */
+	freq_entry = gtk_entry_new_with_max_length(8);
+	gtk_entry_set_text(GTK_ENTRY(freq_entry), "---");
 
-	gtk_container_add(GTK_CONTAINER(freq_frame), freq_label);
-	gtk_container_add(GTK_CONTAINER(range_frame), range_label);
-	*/
+	gtk_signal_connect(GTK_OBJECT(freq_entry), "activate",
+	                   GTK_SIGNAL_FUNC(freq_entry_callback),
+			   freq_entry);
+
+	gtk_container_add(GTK_CONTAINER(freq_frame), freq_entry);
 
 	/* filter radio buttons */
 	ftable = gtk_table_new(2, 2, TRUE);
@@ -190,90 +279,54 @@ static GtkWidget *create_generator(void)
 	button = gtk_radio_button_new_with_label(NULL, "None");
 	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(button));
 	gtk_table_attach_defaults(GTK_TABLE(ftable), button, 0, 1, 0, 1);
-
 	g_signal_connect(G_OBJECT(button), "toggled",
 	                 G_CALLBACK(filter_radio_button_callback), NULL);
-	
+	filters[0] = button;
+
 	button = gtk_radio_button_new_with_label(group, "600 Hz");
 	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(button));
 	gtk_table_attach_defaults(GTK_TABLE(ftable), button, 1, 2, 0, 1);
-
 	g_signal_connect(G_OBJECT(button), "toggled",
 	                 G_CALLBACK(filter_radio_button_callback), NULL);
+	filters[3] = button;
 	
 	button = gtk_radio_button_new_with_label(group, "8 kHz");
 	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(button));
 	gtk_table_attach_defaults(GTK_TABLE(ftable), button, 0, 1, 1, 2);
-
 	g_signal_connect(G_OBJECT(button), "toggled",
 	                 G_CALLBACK(filter_radio_button_callback), NULL);
+	filters[2] = button;
 	
 	button = gtk_radio_button_new_with_label(group, "100 kHz");
 	gtk_table_attach_defaults(GTK_TABLE(ftable), button, 1, 2, 1, 2);
-
 	g_signal_connect(G_OBJECT(button), "toggled",
 	                 G_CALLBACK(filter_radio_button_callback), NULL);
 
 	gtk_container_add(GTK_CONTAINER(filter_frame), ftable);
+	filters[1] = button;
 	
 	/* wave radio buttons */
 	box = gtk_vbox_new(FALSE, 5);
-	
-	button = gtk_radio_button_new_with_label(NULL, "Sinus");
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(button));
-	gtk_box_pack_start(GTK_BOX(box), button, FALSE, TRUE, 0);
 
-	g_signal_connect(G_OBJECT(button), "toggled",
-	                 G_CALLBACK(radio_button_callback), NULL);
+	char *wave_names[] = {
+		"Sinus", "Triangle", "Saw", "Saw inv.",
+		"Square", "B/W video", "Serial", "Serial inv."
+	};
+	
+	int i;
+	
+	group = NULL;
 
-	button = gtk_radio_button_new_with_label(group, "Triangle");
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(button));
-	gtk_box_pack_start(GTK_BOX(box), button, FALSE, TRUE, 0);
-	
-	g_signal_connect(G_OBJECT(button), "toggled",
-	                 G_CALLBACK(radio_button_callback), NULL);
-	
-	button = gtk_radio_button_new_with_label(group, "Saw");
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(button));
-	gtk_box_pack_start(GTK_BOX(box), button, FALSE, TRUE, 0);
-	
-	g_signal_connect(G_OBJECT(button), "toggled",
-	                 G_CALLBACK(radio_button_callback), NULL);
-	
-	button = gtk_radio_button_new_with_label(group, "Saw inv.");
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(button));
-	gtk_box_pack_start(GTK_BOX(box), button, FALSE, TRUE, 0);
+	for (i = 0; i < 8; i++) {
+		waves[i] = gtk_radio_button_new_with_label(group, wave_names[i]);
 
-	g_signal_connect(G_OBJECT(button), "toggled",
-	                 G_CALLBACK(radio_button_callback), NULL);
-	
-	button = gtk_radio_button_new_with_label(group, "Square");
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(button));
-	gtk_box_pack_start(GTK_BOX(box), button, FALSE, TRUE, 0);
+		group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(waves[i]));
 
-	g_signal_connect(G_OBJECT(button), "toggled",
-	                 G_CALLBACK(radio_button_callback), NULL);
-	
-	button = gtk_radio_button_new_with_label(group, "B/W video");
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(button));
-	gtk_box_pack_start(GTK_BOX(box), button, FALSE, TRUE, 0);
+		gtk_box_pack_start(GTK_BOX(box), waves[i], FALSE, TRUE, 0);
 
-	g_signal_connect(G_OBJECT(button), "toggled",
-	                 G_CALLBACK(radio_button_callback), NULL);
-	
-	button = gtk_radio_button_new_with_label(group, "Serial");
-	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(button));
-	gtk_box_pack_start(GTK_BOX(box), button, FALSE, TRUE, 0);
-
-	g_signal_connect(G_OBJECT(button), "toggled",
-	                 G_CALLBACK(radio_button_callback), NULL);
-	
-	button = gtk_radio_button_new_with_label(group, "Serial inv.");
-	gtk_box_pack_start(GTK_BOX(box), button, FALSE, TRUE, 0);
-
-	g_signal_connect(G_OBJECT(button), "toggled",
-	                 G_CALLBACK(radio_button_callback), NULL);
-
+		g_signal_connect(G_OBJECT(waves[i]), "toggled",
+		                 G_CALLBACK(wave_radio_button_callback), (void*)i);
+	}
 
 	gtk_container_add(GTK_CONTAINER(wave_frame), box);
 
