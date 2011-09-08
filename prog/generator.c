@@ -40,7 +40,7 @@ static void dump_generator_state(struct generator *generator)
 {
 	printf("------ Generator state ------\n");
 	printf("Output Wave:      %s\n",
-	       generator_wave_names[generator->out_wave]);
+	       generator_wave_names[generator->wave]);
 	printf("Output Frequency: %6.2f Hz/Baud\n",
 	       generator_convert_freq(generator));
 	printf("Output Amplitude: %f V\n",
@@ -48,7 +48,7 @@ static void dump_generator_state(struct generator *generator)
 	printf("Output Offset:    %f V\n",
 	       generator_convert_offset(generator));
 	printf("Output Filter:    %s\n",
-	       generator_filter_names[generator->out_filter]);
+	       generator_filter_names[generator->filter]);
 	printf("Memory:           %u\n", generator->mem);
 	printf("-----------------------------\n");
 }
