@@ -25,6 +25,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
+#include <math.h>
 
 #include "libgenerator.h"
 
@@ -120,7 +121,7 @@ static void generator_parse_state(struct generator *self)
 		self->freq = (~self->freq & 0xffffff) + 1;
 		self->freq = -self->freq;
 	}
-		
+
 	/* end of data packet */
 	self->data_pos  = 0;
 	self->data_flag = 0;
@@ -148,9 +149,9 @@ void generator_read(struct generator *self)
 
 	if ((len = read(self->port->fd, self->data + self->data_pos,
 	    sizeof(self->data) - self->data_pos)) > 0) {
-		
+
 	//	dump(self->data + self->data_pos, len);
-		
+
 		self->data_pos += len;
 
 	}
@@ -159,7 +160,7 @@ void generator_read(struct generator *self)
 	if (self->data_flag) {
 		if (self->data_pos == 10)
 			generator_parse_state(self);
-	
+
 		return;
 	}
 
@@ -187,7 +188,7 @@ void generator_read(struct generator *self)
 		break;
 		}
 	}
-	
+
 	self->data_pos = 0;
 }
 
@@ -205,7 +206,7 @@ void generator_save(struct generator *self, uint8_t pos)
 void generator_load(struct generator *self, uint8_t pos)
 {
 	uint8_t l = LOAD(pos);
-	
+
 	if (write(self->port->fd, &l, 1) != 1)
 		printf("Error loading state: %s\n.", strerror(errno));
 }
@@ -255,10 +256,42 @@ void generator_set_offset(struct generator *self, uint8_t offset)
 
 void generator_set_freq(struct generator *self, uint32_t freq)
 {
-	uint8_t f[] = {'F', F1(freq), F2(freq), F3(freq)};
+	uint8_t f[] = {'S', F1(freq), F2(freq), F3(freq)};
 
 	if (write(self->port->fd, f, 4) != 4)
 		printf("Error setting output frequency: %s\n.", strerror(errno));
+}
+
+void generator_set_freq_float(struct generator *self, float freq)
+{
+	uint32_t fval;
+
+	switch (self->wave) {
+	case GENERATOR_WAVE_UNKNOWN:
+	case GENERATOR_WAVE_BW_VIDEO:
+		printf("Cannot set frequency for BW video\n");
+		return;
+	case GENERATOR_WAVE_TRIANGLE:
+	case GENERATOR_WAVE_SINE:
+		fval = round((16777216 * 9 * freq) / 20000000);
+	break;
+	case GENERATOR_WAVE_SAWTOOTH:
+		fval = round((16777216 * 6 * freq) / 20000000);
+	break;
+	case GENERATOR_WAVE_SQUARE:
+		fval = round((16777216 * 7 * freq) / 20000000);
+	break;
+	case GENERATOR_WAVE_SERIAL:
+	case GENERATOR_WAVE_SERIAL_INV:
+		//return 200000000.00 / (self->freq >> 8);
+		printf("TODO\n");
+		return;
+	break;
+	}
+
+	printf("%f %u\n", freq, fval);
+
+	generator_set_freq(self, fval);
 }
 
 void generator_load_state(struct generator *self)

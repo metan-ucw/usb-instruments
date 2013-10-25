@@ -123,6 +123,11 @@ void generator_set_offset(struct generator *self, uint8_t offset);
 void generator_set_freq(struct generator *self, uint32_t freq);
 
 /*
+ * Dtto but converts frequency in hertz to 24 bit two complement value.
+ */
+void generator_set_freq_float(struct generator *self, float freq);
+
+/*
  * Tells generator to send it's state.
  */
 void generator_load_state(struct generator *self);

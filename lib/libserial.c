@@ -86,6 +86,8 @@ static int try_lock(const char *dev)
 	char lock[255];
 	FILE *lock_file;
 
+	return 0;
+
 	snprintf(lock, 255, "%s%s", FHS_LOCK_PREFIX, ser_name(dev));
 
 	DEBUG("Trying lock on %s\n", lock);

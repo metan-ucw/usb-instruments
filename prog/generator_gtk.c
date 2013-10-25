@@ -45,7 +45,6 @@ static void destroy(GtkWidget *widget, gpointer data)
 
 static void settings(GtkWidget *widget, gpointer data)
 {
-	
 	gtk_run_serial_cfg(NULL, dev, dev, sizeof(dev));
 }
 
@@ -254,28 +253,37 @@ static void memory_radio_button_callback(GtkWidget *widget,
 static void amplitude_slider_callback(GtkRange *range,
                                       gpointer *priv __attribute__((unused)))
 {
-	int val = gtk_range_get_value(range);
-	
-	printf("Amplitude callback\n");
-	
+	float val = gtk_range_get_value(range);
+
+	printf("Amplitude callback '%f'\n", val);
+
 //	if (counter != NULL)
 //		counter_trigger(counter, val);
+	generator_set_amplitude(generator, (255 * val / 4.81));
+	generator_load_state(generator);
 }
 
 static void offset_slider_callback(GtkRange *range,
                                    gpointer *priv __attribute__((unused)))
 {
-	int val = gtk_range_get_value(range);
-	
-	printf("Offset callback\n");
+	float val = gtk_range_get_value(range);
+
+	printf("Offset callback '%f'\n", val);
 
 //	if (counter != NULL)
 //		counter_trigger(counter, val);
+	generator_set_offset(generator, (-255 * val / 4.81));
+	generator_load_state(generator);
 }
 
 static void freq_entry_callback(GtkWidget *widget, GtkEntry *entry)
 {
-	printf("Entry %s\n", gtk_entry_get_text(GTK_ENTRY(entry)));
+	const char *val = gtk_entry_get_text(GTK_ENTRY(entry));
+
+	printf("Entry '%s'\n", val);
+
+	generator_set_freq_float(generator, atoi(val));
+	generator_load_state(generator);
 }
 
 static GtkWidget *create_generator(void)
@@ -376,7 +384,7 @@ static GtkWidget *create_generator(void)
 		g_signal_connect(G_OBJECT(memory[i]), "toggled",
 		                 G_CALLBACK(memory_radio_button_callback), (void*)i);
 	}
-	
+
 	gtk_container_add(GTK_CONTAINER(memory_frame), box);
 
 	/* amplitude slider */
