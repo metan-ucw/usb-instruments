@@ -239,7 +239,7 @@ static void memory_radio_button_callback(GtkWidget *widget,
 	if (!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
 		return;
 
-	if (generator == NULL)
+	if (!generator)
 		return;
 
 	uint8_t mem = (int)data;
@@ -255,10 +255,11 @@ static void amplitude_slider_callback(GtkRange *range,
 {
 	float val = gtk_range_get_value(range);
 
+	if (!generator)
+		return;
+
 	printf("Amplitude callback '%f'\n", val);
 
-//	if (counter != NULL)
-//		counter_trigger(counter, val);
 	generator_set_amplitude(generator, (255 * val / 4.81));
 	generator_load_state(generator);
 }
@@ -268,10 +269,11 @@ static void offset_slider_callback(GtkRange *range,
 {
 	float val = gtk_range_get_value(range);
 
+	if (!generator)
+		return;
+
 	printf("Offset callback '%f'\n", val);
 
-//	if (counter != NULL)
-//		counter_trigger(counter, val);
 	generator_set_offset(generator, (-255 * val / 4.81));
 	generator_load_state(generator);
 }
@@ -279,6 +281,9 @@ static void offset_slider_callback(GtkRange *range,
 static void freq_entry_callback(GtkWidget *widget, GtkEntry *entry)
 {
 	const char *val = gtk_entry_get_text(GTK_ENTRY(entry));
+
+	if (!generator)
+		return;
 
 	printf("Entry '%s'\n", val);
 

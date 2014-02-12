@@ -26,7 +26,7 @@ $(GTK_OBJECTS): %.o: %.c
 
 $(GTK_PROGRAMS): $(GTK_OBJECTS)
 	@echo "LD   $@"
-	$(CC) $(CFLAGS) `pkg-config --libs gtk+-2.0` $@.o gtk_common.o ../lib/*.a -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) `pkg-config --libs gtk+-2.0` $@.o gtk_common.o ../lib/*.a -o $@
 
 clean:
 	@echo CLEAN $(OBJECTS) $(PROGRAMS) $(GTK_OBJECTS) $(GTK_PROGRAMS)
